@@ -1,6 +1,7 @@
 ﻿using FilesManagement.Context;
 using FilesManagement.Models;
 using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -9,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using File = FilesManagement.Models.File;
 
@@ -29,12 +31,13 @@ namespace FilesManagement.Controllers
         {
             try
             {
-                FileRecord file = await SaveFileAsync(model.MyFile);
+                    FileRecord file = await SaveFileAsync(model.MyFile);
+               
 
                 if (!string.IsNullOrEmpty(file.FilePath))
                 {
-                    file.AltText = model.AltText;
-                    file.Description = model.Description;
+                    //file.AltText = model.AltText;
+                    //file.Description = model.Description;
                     //Save to Inmemory object
                     //fileDB.Add(file);
                     //Save to SQL Server DB
@@ -52,7 +55,7 @@ namespace FilesManagement.Controllers
                 };
             }
         }
-        
+       
         private async Task<FileRecord> SaveFileAsync(IFormFile myFile)
         {
             FileRecord file = new FileRecord();
@@ -61,22 +64,24 @@ namespace FilesManagement.Controllers
                 if (!Directory.Exists(AppDirectory))
                     Directory.CreateDirectory(AppDirectory);
 
-                long size = myFile.Length;
-                var fileName = DateTime.Now.Ticks.ToString() + Path.GetExtension(myFile.FileName);
-                var path = Path.Combine(AppDirectory, fileName);
+                
 
-                file.Id = fileDB.Count() + 1;
-                file.FilePath = path;
-                file.FileName = fileName;
-                file.FileFormat = Path.GetExtension(myFile.FileName);
-                file.ContentType = myFile.ContentType;
-                file.FileSize = size;
+                    long size = myFile.Length;
+                    var fileName = DateTime.Now.Ticks.ToString() + Path.GetExtension(myFile.FileName);
+                    var path = Path.Combine(AppDirectory, fileName);
 
-                using (var stream = new FileStream(path, FileMode.Create))
-                {
-                    await myFile.CopyToAsync(stream);
-                }
+                    file.Id = fileDB.Count() + 1;
+                    file.FilePath = path;
+                    file.FileName = fileName;
+                    file.FileFormat = Path.GetExtension(myFile.FileName);
+                    file.ContentType = myFile.ContentType;
+                    file.FileSize = size;
 
+                    using (var stream = new FileStream(path, FileMode.Create))
+                    {
+                        await myFile.CopyToAsync(stream);
+                    }
+                
                 return file;
             }
             return file;
@@ -115,7 +120,7 @@ namespace FilesManagement.Controllers
                 FileSize = n.FileSize,
             }).ToList();
         }
-
+       
         [HttpGet("Download/{id}")]
         public async Task<IActionResult> DownloadFile(int id)
         {
